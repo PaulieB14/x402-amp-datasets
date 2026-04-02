@@ -9,14 +9,16 @@ export default defineDataset(() => ({
   version: "0.3.0",
   description:
     "Raw x402 payment events on Base mainnet. Extracts EIP-3009 (transferWithAuthorization) " +
-    "and Permit2 (settle/settleWithPermit) payment flows from USDC and the x402 proxy contracts.",
-  keywords: ["x402", "raw", "base", "usdc", "eip3009", "permit2", "payments"],
+    "and Permit2 (settle/settleWithPermit) payment flows from USDC and the x402 proxy contracts. " +
+    "Includes facilitator address extracted from transaction sender.",
+  keywords: ["x402", "raw", "base", "usdc", "eip3009", "permit2", "payments", "facilitator"],
   network: "base-mainnet",
   dependencies: {
     base_rpc: "_/base_mainnet_rpc@latest",
   },
   tables: {
     // EIP-3009 path: USDC Transfer events paired with AuthorizationUsed
+    // facilitator = tx.from (whoever submitted transferWithAuthorization)
     eip3009_transfers: {
       sql: `
         SELECT
@@ -25,6 +27,7 @@ export default defineDataset(() => ({
           evm_decode_hex(t.tx_hash)                        AS tx_hash,
           evm_decode_hex(transfer.from)                     AS buyer_address,
           evm_decode_hex(transfer.to)                       AS seller_address,
+          evm_decode_hex(tx.from)                           AS facilitator_address,
           transfer.value                                    AS value_usdc,
           CAST(transfer.value AS DOUBLE) / 1000000.0       AS value_usdc_decimal,
           auth.nonce                                        AS nonce,
@@ -51,10 +54,14 @@ export default defineDataset(() => ({
           ON t.tx_hash = a.tx_hash
          AND t.block_num = a.block_num
          AND t.log_index = a.log_index + 1
+        JOIN base_rpc.transactions tx
+          ON t.tx_hash = tx.tx_hash
+         AND t.block_num = tx.block_num
       `,
     },
     // Permit2 path: Settled() events on the x402ExactPermit2Proxy
     // paired with USDC Transfer in the same tx
+    // facilitator = tx.from (whoever called settle())
     permit2_transfers: {
       sql: `
         SELECT
@@ -63,6 +70,7 @@ export default defineDataset(() => ({
           evm_decode_hex(t.tx_hash)                        AS tx_hash,
           evm_decode_hex(transfer.from)                     AS buyer_address,
           evm_decode_hex(transfer.to)                       AS seller_address,
+          evm_decode_hex(tx.from)                           AS facilitator_address,
           transfer.value                                    AS value_usdc,
           CAST(transfer.value AS DOUBLE) / 1000000.0       AS value_usdc_decimal,
           'settled'                                         AS settlement_type,
@@ -84,9 +92,13 @@ export default defineDataset(() => ({
         ) s
           ON t.tx_hash = s.tx_hash
          AND t.block_num = s.block_num
+        JOIN base_rpc.transactions tx
+          ON t.tx_hash = tx.tx_hash
+         AND t.block_num = tx.block_num
       `,
     },
     // Permit2 path: SettledWithPermit() events (gasless variant)
+    // facilitator = tx.from
     permit2_gasless_transfers: {
       sql: `
         SELECT
@@ -95,6 +107,7 @@ export default defineDataset(() => ({
           evm_decode_hex(t.tx_hash)                        AS tx_hash,
           evm_decode_hex(transfer.from)                     AS buyer_address,
           evm_decode_hex(transfer.to)                       AS seller_address,
+          evm_decode_hex(tx.from)                           AS facilitator_address,
           transfer.value                                    AS value_usdc,
           CAST(transfer.value AS DOUBLE) / 1000000.0       AS value_usdc_decimal,
           'settled_with_permit'                             AS settlement_type,
@@ -116,21 +129,24 @@ export default defineDataset(() => ({
         ) s
           ON t.tx_hash = s.tx_hash
          AND t.block_num = s.block_num
+        JOIN base_rpc.transactions tx
+          ON t.tx_hash = tx.tx_hash
+         AND t.block_num = tx.block_num
       `,
     },
     // Unified view of all x402 transfers (both paths)
     all_transfers: {
       sql: `
         SELECT timestamp, block_num, tx_hash, buyer_address, seller_address,
-               value_usdc, value_usdc_decimal, transfer_method
+               facilitator_address, value_usdc, value_usdc_decimal, transfer_method
         FROM self.eip3009_transfers
         UNION ALL
         SELECT timestamp, block_num, tx_hash, buyer_address, seller_address,
-               value_usdc, value_usdc_decimal, transfer_method
+               facilitator_address, value_usdc, value_usdc_decimal, transfer_method
         FROM self.permit2_transfers
         UNION ALL
         SELECT timestamp, block_num, tx_hash, buyer_address, seller_address,
-               value_usdc, value_usdc_decimal, transfer_method
+               facilitator_address, value_usdc, value_usdc_decimal, transfer_method
         FROM self.permit2_gasless_transfers
       `,
     },

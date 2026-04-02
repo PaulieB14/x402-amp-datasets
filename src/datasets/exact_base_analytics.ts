@@ -106,10 +106,41 @@ export default defineDataset(() => ({
           tx_hash,
           buyer_address,
           seller_address,
+          facilitator_address,
           value_usdc,
           value_usdc_decimal,
           transfer_method
         FROM base_raw.all_transfers
+      `,
+    },
+    facilitator_stats: {
+      sql: `
+        SELECT
+          facilitator_address,
+          COUNT(*)                            AS total_settlements,
+          SUM(value_usdc)                     AS total_volume_usdc,
+          SUM(value_usdc_decimal)             AS total_volume_usdc_decimal,
+          COUNT(DISTINCT buyer_address)       AS unique_payers,
+          COUNT(DISTINCT seller_address)      AS unique_recipients,
+          MIN(timestamp)                      AS first_settlement_ts,
+          MAX(timestamp)                      AS last_settlement_ts
+        FROM base_raw.all_transfers
+        GROUP BY facilitator_address
+        ORDER BY total_volume_usdc DESC
+      `,
+    },
+    facilitator_daily: {
+      sql: `
+        SELECT
+          DATE_TRUNC('day', timestamp)         AS date,
+          facilitator_address,
+          COUNT(*)                              AS total_settlements,
+          SUM(value_usdc)                       AS total_volume_usdc,
+          SUM(value_usdc_decimal)               AS total_volume_usdc_decimal,
+          COUNT(DISTINCT buyer_address)         AS unique_payers
+        FROM base_raw.all_transfers
+        GROUP BY 1, facilitator_address
+        ORDER BY 1 DESC, total_volume_usdc DESC
       `,
     },
     new_payers_daily: {

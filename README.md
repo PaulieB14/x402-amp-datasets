@@ -24,7 +24,7 @@ The raw extraction layer filters for x402 settlement events across both payment 
 
 Other chains (Ethereum, Polygon, Arbitrum, Optimism) follow the same pattern — pending raw RPC dataset availability from the Amp team.
 
-## Analytics Tables (13 per chain)
+## Analytics Tables (15 per chain)
 
 | Table | Description |
 |---|---|
@@ -39,7 +39,9 @@ Other chains (Ethereum, Polygon, Arbitrum, Optimism) follow the same pattern —
 | `payer_recipient_pairs` | Who pays whom — relationship mapping with volume |
 | `payment_size_distribution` | Volume bucketed by payment size (micro/small/medium/large/xlarge/whale) |
 | `transfer_method_stats` | Volume breakdown by settlement path (eip3009 vs permit2) |
-| `raw_transfers` | Pass-through of all x402 events with transfer_method tag |
+| `facilitator_stats` | All-time stats per facilitator (Coinbase CDP, PayAI, Thirdweb, etc.) |
+| `facilitator_daily` | Daily volume per facilitator (for operator dashboards) |
+| `raw_transfers` | Pass-through of all x402 events with facilitator + transfer_method |
 | `protocol_summary` | Single-row all-time cumulative totals |
 
 ## Usage
@@ -57,6 +59,11 @@ const summary = await client.query(
 // EIP-3009 vs Permit2 breakdown
 const methods = await client.query(
   "SELECT * FROM x402.exact_base_analytics.transfer_method_stats"
+)
+
+// Facilitator leaderboard (Coinbase CDP, PayAI, etc.)
+const facilitators = await client.query(
+  "SELECT * FROM x402.exact_base_analytics.facilitator_stats"
 )
 
 // Payment size distribution
