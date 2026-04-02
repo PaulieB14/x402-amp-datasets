@@ -7,11 +7,11 @@ built on [Amp](https://github.com/edgeandnode/amp) by Edge & Node.
 
 | Dataset | Chain | Status |
 |---|---|---|
-| `x402/exact_base_analytics` | Base | ✅ Published |
-| `x402/exact_ethereum_analytics` | Ethereum | TBD |
-| `x402/exact_polygon_analytics` | Polygon | TBD |
-| `x402/exact_arbitrum_analytics` | Arbitrum One | TBD |
-| `x402/exact_optimism_analytics` | Optimism | TBD |
+| `x402/exact_base_analytics` | Base | Code-ready, upstream schema confirmed |
+| `x402/exact_ethereum_analytics` | Ethereum | Code-ready, pending raw data check |
+| `x402/exact_polygon_analytics` | Polygon | Code-ready, pending raw data check |
+| `x402/exact_arbitrum_analytics` | Arbitrum One | Code-ready, pending raw data check |
+| `x402/exact_optimism_analytics` | Optimism | Code-ready, pending raw data check |
 
 ## Tables (all chains)
 
