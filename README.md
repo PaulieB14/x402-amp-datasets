@@ -72,8 +72,18 @@ const sizes = await client.query(
 )
 ```
 
-## What We Need From the Amp Team
+## Deployment Checklist
 
-1. **Production Amp endpoint URL**
-2. **Raw EVM RPC dataset name for Base** (e.g., `_/base_mainnet_rpc@latest`)
-3. **Raw RPC availability for other chains** (Ethereum, Polygon, Arbitrum, Optimism)
+**Confirmed from Amp source (`tests/config/`):**
+- [x] Raw EVM RPC dataset name for Base: `_/base_rpc` (from `tests/config/manifests/base_rpc.json`)
+- [x] Network string: `base-mainnet` (from provider config `rpc_eth_base.toml`)
+- [x] Dependency format: `_/base_rpc@latest` (matches `_/eth_rpc@0.0.0` pattern in tests)
+- [x] SQL alias: `base_rpc.logs`, `base_rpc.transactions` (standard alias dot notation)
+- [x] Inter-table refs: `self.` prefix (confirmed in `datasets-derived-inter-table-dependencies.md`)
+
+**Confirm with Amp team at deployment:**
+- [ ] Production Amp endpoint URL
+- [ ] `_/base_rpc` is registered and extracting on production (with appropriate start_block)
+- [ ] Namespace `x402` is authorized (fallback: use wallet address as namespace)
+- [ ] Raw RPC availability for other chains (`_/eth_rpc`, `_/polygon_rpc`, `_/arbitrum_rpc`, `_/optimism_rpc`)
+- [ ] `TO_TIMESTAMP()` timezone behavior — add `AT TIME ZONE 'UTC'` if daily_stats totals don't match protocol_summary

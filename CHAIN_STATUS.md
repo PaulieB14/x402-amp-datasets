@@ -1,17 +1,17 @@
 # Chain Status
 
-| Chain     | Raw RPC Dataset             | x402 Raw Extraction          | Analytics     | Notes |
-|-----------|----------------------------|------------------------------|---------------|-------|
-| Base      | `_/base_mainnet_rpc@latest` | `x402/base_mainnet_raw`     | 13 tables     | EIP-3009 + Permit2 paths |
-| Ethereum  | TBD                        | Pending                      | Template ready | Need raw RPC dataset name |
-| Polygon   | TBD                        | Pending                      | Template ready | Need raw RPC dataset name |
-| Arbitrum  | TBD                        | Pending                      | Template ready | Need raw RPC dataset name |
-| Optimism  | TBD                        | Pending                      | Template ready | Need raw RPC dataset name |
+| Chain     | Raw RPC Dataset          | x402 Raw Extraction          | Analytics     | Notes |
+|-----------|-------------------------|------------------------------|---------------|-------|
+| Base      | `_/base_rpc@latest`     | `x402/base_mainnet_raw`     | 15 tables     | EIP-3009 + Permit2 + facilitator |
+| Ethereum  | `_/eth_rpc@latest`      | Pending                      | Template ready | Confirm dataset registered |
+| Polygon   | `_/polygon_rpc@latest`  | Pending                      | Template ready | Confirm dataset registered |
+| Arbitrum  | `_/arbitrum_rpc@latest` | Pending                      | Template ready | Confirm dataset registered |
+| Optimism  | `_/optimism_rpc@latest` | Pending                      | Template ready | Confirm dataset registered |
 
 ## Architecture
 
 ```
-Amp raw EVM data (_/base_mainnet_rpc)
+Amp raw EVM data (_/base_rpc)
   → x402 raw extraction (x402/base_mainnet_raw)
     - eip3009_transfers: AuthorizationUsed + Transfer joins
     - permit2_transfers: Settled() + Transfer joins

@@ -14,7 +14,7 @@ export default defineDataset(() => ({
   keywords: ["x402", "raw", "base", "usdc", "eip3009", "permit2", "payments", "facilitator"],
   network: "base-mainnet",
   dependencies: {
-    base_rpc: "_/base_mainnet_rpc@latest",
+    base_rpc: "_/base_rpc@latest",
   },
   tables: {
     // EIP-3009 path: USDC Transfer events paired with AuthorizationUsed
