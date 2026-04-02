@@ -18,8 +18,12 @@ built on [Amp](https://github.com/edgeandnode/amp) by Edge & Node.
 | Table | Description |
 |---|---|
 | `daily_stats` | Payment count + volume by UTC day |
+| `hourly_stats` | Payment count + volume by hour (for intraday charts) |
 | `top_payers` | All payer addresses ranked by total spend |
 | `top_recipients` | All recipients ranked by total revenue |
+| `first_seen_payers` | First appearance of each payer address (growth tracking) |
+| `first_seen_recipients` | First appearance of each recipient address (growth tracking) |
+| `raw_transfers` | Pass-through of all x402 transfer events with decimal conversion |
 | `protocol_summary` | Single-row all-time cumulative totals |
 
 ## Usage

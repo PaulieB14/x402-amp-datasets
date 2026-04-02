@@ -3,10 +3,10 @@ import { defineDataset } from "@edgeandnode/amp"
 export default defineDataset(() => ({
   namespace: "x402",
   name: "exact_polygon_analytics",
-  version: "0.1.0",
+  version: "0.2.0",
   description:
-    "x402 payment analytics for Polygon mainnet. Daily volume, top payers, " +
-    "and top recipients derived from ampersend/exact_polygon_mainnet.",
+    "x402 payment analytics for Polygon mainnet. Hourly/daily volume, top payers, " +
+    "top recipients, first-seen tracking, and raw transfers derived from ampersend/exact_polygon_mainnet.",
   keywords: ["x402", "analytics", "polygon", "usdc", "payments", "agentic"],
   sources: ["https://github.com/edgeandnode/ampersend"],
   network: "polygon-mainnet",
@@ -23,6 +23,20 @@ export default defineDataset(() => ({
           SUM(value_usdc) / 1000000.0                  AS total_volume_usdc_decimal,
           COUNT(DISTINCT buyer_address)                 AS unique_payers,
           COUNT(DISTINCT seller_address)                AS unique_recipients
+        FROM polygon.usdc_transfers
+        GROUP BY 1
+        ORDER BY 1 DESC
+      `,
+    },
+    hourly_stats: {
+      sql: `
+        SELECT
+          DATE_TRUNC('hour', TO_TIMESTAMP(timestamp))   AS hour,
+          COUNT(*)                                       AS total_payments,
+          SUM(value_usdc)                                AS total_volume_usdc,
+          SUM(value_usdc) / 1000000.0                   AS total_volume_usdc_decimal,
+          COUNT(DISTINCT buyer_address)                  AS unique_payers,
+          COUNT(DISTINCT seller_address)                 AS unique_recipients
         FROM polygon.usdc_transfers
         GROUP BY 1
         ORDER BY 1 DESC
@@ -56,6 +70,46 @@ export default defineDataset(() => ({
         FROM polygon.usdc_transfers
         GROUP BY seller_address
         ORDER BY total_revenue_usdc DESC
+      `,
+    },
+    first_seen_payers: {
+      sql: `
+        SELECT
+          buyer_address,
+          MIN(timestamp)                AS first_seen_ts,
+          MIN(block_num)                AS first_seen_block,
+          COUNT(*)                      AS total_payments,
+          SUM(value_usdc) / 1000000.0  AS total_volume_usdc_decimal
+        FROM polygon.usdc_transfers
+        GROUP BY buyer_address
+        ORDER BY first_seen_ts ASC
+      `,
+    },
+    first_seen_recipients: {
+      sql: `
+        SELECT
+          seller_address,
+          MIN(timestamp)                AS first_seen_ts,
+          MIN(block_num)                AS first_seen_block,
+          COUNT(*)                      AS total_payments,
+          SUM(value_usdc) / 1000000.0  AS total_volume_usdc_decimal
+        FROM polygon.usdc_transfers
+        GROUP BY seller_address
+        ORDER BY first_seen_ts ASC
+      `,
+    },
+    raw_transfers: {
+      sql: `
+        SELECT
+          timestamp,
+          block_num,
+          tx_hash,
+          buyer_address,
+          seller_address,
+          value_usdc,
+          value_usdc / 1000000.0       AS value_usdc_decimal,
+          nonce
+        FROM polygon.usdc_transfers
       `,
     },
     protocol_summary: {
