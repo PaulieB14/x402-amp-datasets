@@ -3,10 +3,11 @@ import { defineDataset } from "@edgeandnode/amp"
 export default defineDataset(() => ({
   namespace: "x402",
   name: "exact_optimism_analytics",
-  version: "0.2.0",
+  version: "0.3.0",
   description:
     "x402 payment analytics for Optimism mainnet. Hourly/daily volume, top payers, " +
-    "top recipients, first-seen tracking, and raw transfers derived from ampersend/exact_optimism_mainnet.",
+    "top recipients, first-seen tracking, growth curves, payment size distribution, " +
+    "payer-recipient pairs, and raw transfers derived from ampersend/exact_optimism_mainnet.",
   keywords: ["x402", "analytics", "optimism", "usdc", "payments", "agentic"],
   sources: ["https://github.com/edgeandnode/ampersend"],
   network: "optimism-mainnet",
@@ -110,6 +111,71 @@ export default defineDataset(() => ({
           value_usdc / 1000000.0       AS value_usdc_decimal,
           nonce
         FROM optimism.usdc_transfers
+      `,
+    },
+    new_payers_daily: {
+      sql: `
+        SELECT
+          DATE_TRUNC('day', TO_TIMESTAMP(first_seen_ts)) AS date,
+          COUNT(*)                                        AS new_payers
+        FROM (
+          SELECT buyer_address, MIN(timestamp) AS first_seen_ts
+          FROM optimism.usdc_transfers
+          GROUP BY buyer_address
+        )
+        GROUP BY 1
+        ORDER BY 1 DESC
+      `,
+    },
+    new_recipients_daily: {
+      sql: `
+        SELECT
+          DATE_TRUNC('day', TO_TIMESTAMP(first_seen_ts)) AS date,
+          COUNT(*)                                        AS new_recipients
+        FROM (
+          SELECT seller_address, MIN(timestamp) AS first_seen_ts
+          FROM optimism.usdc_transfers
+          GROUP BY seller_address
+        )
+        GROUP BY 1
+        ORDER BY 1 DESC
+      `,
+    },
+    payer_recipient_pairs: {
+      sql: `
+        SELECT
+          buyer_address,
+          seller_address,
+          COUNT(*)                      AS payment_count,
+          SUM(value_usdc)               AS total_volume_usdc,
+          SUM(value_usdc) / 1000000.0  AS total_volume_usdc_decimal,
+          MIN(timestamp)                AS first_payment_ts,
+          MAX(timestamp)                AS last_payment_ts
+        FROM optimism.usdc_transfers
+        GROUP BY buyer_address, seller_address
+        ORDER BY total_volume_usdc DESC
+      `,
+    },
+    payment_size_distribution: {
+      sql: `
+        SELECT
+          CASE
+            WHEN value_usdc / 1000000.0 < 0.01   THEN 'micro (<$0.01)'
+            WHEN value_usdc / 1000000.0 < 0.10   THEN 'small ($0.01-$0.10)'
+            WHEN value_usdc / 1000000.0 < 1.00   THEN 'medium ($0.10-$1.00)'
+            WHEN value_usdc / 1000000.0 < 10.00  THEN 'large ($1-$10)'
+            WHEN value_usdc / 1000000.0 < 100.00 THEN 'xlarge ($10-$100)'
+            ELSE 'whale ($100+)'
+          END                           AS size_bucket,
+          COUNT(*)                      AS payment_count,
+          SUM(value_usdc)               AS total_volume_usdc,
+          SUM(value_usdc) / 1000000.0  AS total_volume_usdc_decimal,
+          MIN(value_usdc) / 1000000.0  AS min_payment_decimal,
+          MAX(value_usdc) / 1000000.0  AS max_payment_decimal,
+          AVG(value_usdc) / 1000000.0  AS avg_payment_decimal
+        FROM optimism.usdc_transfers
+        GROUP BY 1
+        ORDER BY total_volume_usdc DESC
       `,
     },
     protocol_summary: {

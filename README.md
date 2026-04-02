@@ -13,7 +13,7 @@ built on [Amp](https://github.com/edgeandnode/amp) by Edge & Node.
 | `x402/exact_arbitrum_analytics` | Arbitrum One | Code-ready, pending raw data check |
 | `x402/exact_optimism_analytics` | Optimism | Code-ready, pending raw data check |
 
-## Tables (all chains)
+## Tables (12 per chain)
 
 | Table | Description |
 |---|---|
@@ -23,6 +23,10 @@ built on [Amp](https://github.com/edgeandnode/amp) by Edge & Node.
 | `top_recipients` | All recipients ranked by total revenue |
 | `first_seen_payers` | First appearance of each payer address (growth tracking) |
 | `first_seen_recipients` | First appearance of each recipient address (growth tracking) |
+| `new_payers_daily` | Count of first-time payers per day (adoption curve) |
+| `new_recipients_daily` | Count of first-time recipients per day (adoption curve) |
+| `payer_recipient_pairs` | Who pays whom — relationship mapping with volume |
+| `payment_size_distribution` | Volume bucketed by payment size (micro/small/medium/large/xlarge/whale) |
 | `raw_transfers` | Pass-through of all x402 transfer events with decimal conversion |
 | `protocol_summary` | Single-row all-time cumulative totals |
 
