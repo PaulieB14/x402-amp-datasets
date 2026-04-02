@@ -1,0 +1,21 @@
+{
+  "name": "x402-amp-datasets",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Multi-chain x402 payment analytics datasets on Amp",
+  "scripts": {
+    "build": "amp build",
+    "deploy": "amp deploy",
+    "smoke-test": "npx ts-node scripts/smoke-test.ts"
+  },
+  "keywords": ["x402", "amp", "analytics", "usdc", "payments", "agentic"],
+  "author": "paulbarba",
+  "license": "MIT",
+  "dependencies": {
+    "@edgeandnode/amp": "^0.0.53"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.2"
+  }
+}
