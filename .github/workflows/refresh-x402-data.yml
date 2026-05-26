@@ -1,0 +1,40 @@
+name: Refresh x402-omnigraph snapshot
+
+on:
+  schedule:
+    # 08:00 UTC daily
+    - cron: '0 8 * * *'
+  workflow_dispatch:  # allow manual trigger from Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install DuckDB
+        run: |
+          DUCKDB_VERSION="1.5.2"
+          curl -fsSL "https://github.com/duckdb/duckdb/releases/download/v${DUCKDB_VERSION}/duckdb_cli-linux-amd64.zip" -o /tmp/duckdb.zip
+          unzip -o /tmp/duckdb.zip -d /usr/local/bin
+          duckdb --version
+
+      - name: Refresh x402-omnigraph parquet
+        env:
+          GRAPH_API_KEY: ${{ secrets.GRAPH_API_KEY }}
+        run: bash scripts/refresh-x402-omnigraph.sh
+
+      - name: Commit + push if changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/x402-omnigraph/
+          if git diff --cached --quiet; then
+            echo "no changes — subgraph snapshot unchanged"
+            exit 0
+          fi
+          git commit -m "data: refresh x402-omnigraph snapshot ($(date -u +%Y-%m-%d))"
+          git push
