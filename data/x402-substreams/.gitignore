@@ -1,0 +1,3 @@
+# Working / intermediate sink files
+output/localdata/
+*.tmp
