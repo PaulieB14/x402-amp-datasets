@@ -1,0 +1,29 @@
+{
+  "window": {
+    "chain": "base-mainnet",
+    "first_block": 46484625,
+    "last_block": 46485837,
+    "blocks_indexed": 1213,
+    "approx_duration_minutes": 40
+  },
+  "log_counts": {
+    "all_logs": 1157837,
+    "usdc_total_logs": 138583,
+    "eip3009_authorizations": 4225,
+    "x402_permit2_proxy_logs": 1
+  },
+  "storage": {
+    "bytes_on_disk": 91659418,
+    "bytes_per_block_avg": 75564,
+    "projected_gb_per_day": 3.26,
+    "projected_gb_per_month": 97.9,
+    "projected_gb_per_year": 1191.0
+  },
+  "test_environment": {
+    "host": "macOS arm64 (M-series)",
+    "ampd_version": "0.0.35",
+    "rpc": "https://base.publicnode.com (free)",
+    "backfill_rate_blocks_per_sec": 6.0,
+    "infrastructure_cost_usd": 0
+  }
+}
