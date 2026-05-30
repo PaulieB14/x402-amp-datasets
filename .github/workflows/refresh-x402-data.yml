@@ -1,9 +1,16 @@
 name: Refresh x402-omnigraph snapshot
 
 on:
-  schedule:
-    # 08:00 UTC daily
-    - cron: '0 8 * * *'
+  # Daily cron paused 2026-05-30 — the gateway is currently serving v0.2.x
+  # of the subgraph, which is stuck at Nov 16, 2025. Running the refresh
+  # would just overwrite recent parquet snapshots with stale data.
+  #
+  # Resume once v0.2.x indexers catch chain tip (check by querying _meta on
+  # https://gateway.thegraph.com/api/<KEY>/subgraphs/id/Cb56epg3EvQ6JRpPfknbkM54QxpzTvLa7mwKNQQfUyoj
+  # and seeing block.number near current chain head).
+  #
+  # schedule:
+  #   - cron: '0 8 * * *'
   workflow_dispatch:  # allow manual trigger from Actions tab
 
 permissions:
