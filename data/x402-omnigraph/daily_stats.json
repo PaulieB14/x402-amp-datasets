@@ -1,1 +1,1 @@
-{"errors":[{"locations":[{"column":0,"line":0}],"message":"No value provided for required argument: `id`"}]}
+{"errors":[{"locations":[{"line":0,"column":0}],"message":"No value provided for required argument: `id`"}]}
