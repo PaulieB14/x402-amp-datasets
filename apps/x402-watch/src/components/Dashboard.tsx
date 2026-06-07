@@ -387,6 +387,7 @@ export function TopRecipients() {
       const status: StatusRow = await fetch("/v1/status", { cache: "no-store" }).then((r) =>
         r.json(),
       );
+      if (status.tip_block == null) return; // indexer not ready
       const to = status.tip_block;
       const from = Math.max(0, to - 10_000);
       const res = await fetch(
@@ -503,6 +504,10 @@ export function AddressLookup() {
       const status: StatusRow = await fetch("/v1/status", { cache: "no-store" }).then((r) =>
         r.json(),
       );
+      if (status.tip_block == null) {
+        setError("indexer rebuilding — try again in a few minutes");
+        return;
+      }
       const to = status.tip_block;
       const from = Math.max(0, to - 50_000);
       const res = await fetch(
