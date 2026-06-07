@@ -24,12 +24,19 @@ const FORBIDDEN_PATTERNS: { pattern: RegExp; reason: string }[] = [
     pattern: /\binto\s+outfile\b|\binto\s+dumpfile\b/i,
     reason: "file-write clauses are not allowed",
   },
-  { pattern: /--|\/\*|\*\//, reason: "SQL comments are not allowed" },
   {
     pattern: /;[\s\S]*\S/,
     reason: "only one statement per request (no semicolon separator)",
   },
 ];
+
+// Strip SQL comments before validation. Comments are cosmetic, not a security
+// concern for SELECT-only queries — but they break the "starts with SELECT"
+// check and confuse the LIMIT detector. Removing them at parse-time lets users
+// write self-documenting queries in the playground.
+function stripComments(s: string): string {
+  return s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/--[^\n]*/g, "");
+}
 
 const REQUIRED_BLOCK_NUM = /\bblock_num\b/i;
 const STARTS_WITH_SELECT = /^\s*(?:with\b[\s\S]+?\bselect\b|select\b)/i;
@@ -43,7 +50,7 @@ export type SqlGuardResult =
   | { ok: false; status: number; code: string; message: string; hint?: string };
 
 export function guardSql(raw: string): SqlGuardResult {
-  let sql = raw.trim();
+  let sql = stripComments(raw).trim();
   if (sql.endsWith(";")) sql = sql.slice(0, -1).trimEnd();
 
   if (sql.length === 0)
