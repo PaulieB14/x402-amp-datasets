@@ -18,7 +18,12 @@ type AddrFootprint = {
   as_recipient: { count: number; first_block: number | null; last_block: number | null };
   elapsed_ms: number;
 };
-type StatusRow = { tip_block: number; earliest_block: number; span_blocks: number };
+type StatusRow = {
+  tip_block: number | null;
+  earliest_block: number | null;
+  span_blocks: number | null;
+  source_status?: "live" | "rebuilding";
+};
 
 function topicToAddress(topic: string): string {
   const stripped = topic.replace(/^0x/, "");
@@ -59,7 +64,7 @@ const sectionTitle: React.CSSProperties = {
   letterSpacing: "0.15em",
 };
 
-function PulseDot({ live }: { live: boolean }) {
+function PulseDot({ color = "#10b981" }: { color?: string }) {
   return (
     <span
       style={{
@@ -67,42 +72,50 @@ function PulseDot({ live }: { live: boolean }) {
         width: 8,
         height: 8,
         borderRadius: "50%",
-        background: live ? "#10b981" : "#ef4444",
-        boxShadow: live ? "0 0 12px #10b981, 0 0 4px #10b981" : "0 0 8px #ef4444",
-        animation: live ? "x402pulse 1.6s ease-in-out infinite" : "none",
+        background: color,
+        boxShadow: `0 0 12px ${color}, 0 0 4px ${color}`,
+        animation: "x402pulse 1.6s ease-in-out infinite",
       }}
     />
   );
 }
 
+type SourceStatus = "live" | "rebuilding" | "unreachable";
+
 export function StatsStrip() {
   const [tip, setTip] = useState<number | null>(null);
   const [todayCount, setTodayCount] = useState<number | null>(null);
   const [updatedAt, setUpdatedAt] = useState<number>(Date.now());
-  const [live, setLive] = useState(false);
+  const [status, setStatus] = useState<SourceStatus>("rebuilding");
   const [tick, setTick] = useState(0);
 
   const refresh = useCallback(async () => {
     try {
-      const status: StatusRow = await fetch("/v1/status", { cache: "no-store" }).then((r) =>
+      const s: StatusRow = await fetch("/v1/status", { cache: "no-store" }).then((r) =>
         r.json(),
       );
-      setTip(status.tip_block);
-      const to = status.tip_block;
-      const from = Math.max(0, to - 43200);
-      const daily = await fetch(
-        `/v1/x402/daily-stats?from_block=${from}&to_block=${to}`,
-        { cache: "no-store" },
-      ).then((r) => r.json());
-      const total = (daily.buckets ?? []).reduce(
-        (s: number, b: { settlements: number }) => s + b.settlements,
-        0,
-      );
-      setTodayCount(total);
+      setTip(s.tip_block);
+      setStatus(s.source_status === "rebuilding" ? "rebuilding" : s.tip_block ? "live" : "rebuilding");
+      if (s.tip_block) {
+        const to = s.tip_block;
+        const from = Math.max(0, to - 43200);
+        try {
+          const daily = await fetch(
+            `/v1/x402/daily-stats?from_block=${from}&to_block=${to}`,
+            { cache: "no-store" },
+          ).then((r) => r.json());
+          const total = (daily.buckets ?? []).reduce(
+            (sum: number, b: { settlements: number }) => sum + b.settlements,
+            0,
+          );
+          setTodayCount(total);
+        } catch {
+          // keep previous count
+        }
+      }
       setUpdatedAt(Date.now());
-      setLive(true);
     } catch {
-      setLive(false);
+      setStatus("unreachable");
     }
   }, []);
 
@@ -122,45 +135,86 @@ export function StatsStrip() {
   const sinceUpdate = Math.round((Date.now() - updatedAt) / 1000);
   void tick;
 
+  const statusInfo: Record<SourceStatus, { color: string; label: string }> = {
+    live: { color: "#10b981", label: "live from base mainnet" },
+    rebuilding: { color: "#f59e0b", label: "indexer compacting — data may be stale" },
+    unreachable: { color: "#ef4444", label: "data source unreachable" },
+  };
+  const si = statusInfo[status];
+
   return (
-    <div
-      style={{
-        ...card,
-        padding: 0,
-        overflow: "hidden",
-        marginTop: 0,
-      }}
-    >
+    <>
+      {status === "rebuilding" && (
+        <div
+          style={{
+            background: "linear-gradient(90deg, rgba(245,158,11,0.15) 0%, rgba(245,158,11,0.05) 100%)",
+            border: "1px solid rgba(245,158,11,0.3)",
+            borderRadius: 10,
+            padding: "12px 18px",
+            fontSize: 13,
+            color: "#fbbf24",
+            marginBottom: 16,
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+          }}
+        >
+          <span
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: "50%",
+              background: "#f59e0b",
+              boxShadow: "0 0 10px #f59e0b",
+              animation: "x402pulse 1.6s ease-in-out infinite",
+              flexShrink: 0,
+            }}
+          />
+          <span>
+            <strong>indexer rebuilding indices</strong> — ampd is running a large compaction merge. live
+            data will resume in a few minutes. retrying every 60s.
+          </span>
+        </div>
+      )}
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: "1.4fr 1fr 1fr",
+          ...card,
+          padding: 0,
+          overflow: "hidden",
+          marginTop: 0,
         }}
       >
-        <StatCell
-          label="tip block"
-          value={tip?.toLocaleString() ?? "…"}
-          sub={
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-              <PulseDot live={live} />
-              {live ? "live from base mainnet" : "data source unreachable"}
-            </span>
-          }
-        />
-        <StatCell
-          label="payments last 24h"
-          value={todayCount?.toLocaleString() ?? "…"}
-          accent="#22d3ee"
-          sub="USDC settlements via x402"
-        />
-        <StatCell
-          label="last refresh"
-          value={`${sinceUpdate}s`}
-          sub="auto every 30s"
-          muted
-        />
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1.4fr 1fr 1fr",
+          }}
+        >
+          <StatCell
+            label="tip block"
+            value={tip?.toLocaleString() ?? "…"}
+            sub={
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <PulseDot color={si.color} />
+                {si.label}
+              </span>
+            }
+          />
+          <StatCell
+            label="payments last 24h"
+            value={todayCount?.toLocaleString() ?? "…"}
+            accent="#22d3ee"
+            sub="USDC settlements via x402"
+          />
+          <StatCell
+            label="last refresh"
+            value={`${sinceUpdate}s`}
+            sub="auto every 60s"
+            muted
+          />
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
