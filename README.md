@@ -16,6 +16,18 @@ matters for picking one.
 to validate about Amp, what actually worked, what didn't, and what we'd do
 differently.
 
+
+## Live query frontend
+
+[`apps/x402-watch/`](apps/x402-watch/) is a Next.js scaffold that queries a
+running ampd instance for live x402 events on Base. Independent from the
+dataset definitions in `src/` — it deploys to Vercel separately and reads
+`AMP_ORIGIN` over the network (typically a Cloudflare Tunnel into a
+self-hosted ampd, but any reachable ampd port 1603 works).
+
+See [`apps/x402-watch/STATUS.md`](apps/x402-watch/STATUS.md) for endpoints,
+gotchas, and deploy notes.
+
 ## Quick query examples
 
 ```bash

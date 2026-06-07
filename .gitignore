@@ -2,3 +2,10 @@ node_modules/
 dist/
 .amp/
 .env
+
+# Bundled Next.js app (apps/x402-watch — deploys to Vercel separately)
+apps/x402-watch/node_modules/
+apps/x402-watch/.next/
+apps/x402-watch/.vercel/
+apps/x402-watch/tsconfig.tsbuildinfo
+apps/x402-watch/.env.local
