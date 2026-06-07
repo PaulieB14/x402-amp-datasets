@@ -5,23 +5,42 @@ import { handle } from "@/lib/errors";
 export const runtime = "nodejs";
 export const maxDuration = 20;
 
+// In-memory cache for status. Tip is cheap (parquet stats), earliest is not
+// (forces full-file scan), so cache earliest aggressively and refresh tip
+// per-request.
+let earliestCache: { value: number; at: number } | null = null;
+const EARLIEST_TTL_MS = 5 * 60 * 1000;
+
 export async function GET() {
   try {
-    // Tip + count + earliest. WHERE block_num >= 0 forces a predicated scan
-    // so DataFusion can prune; without it, /v1/status is a full table scan
-    // and gets very slow on a not-yet-compacted ampd store.
-    const rows = await ampQuery(
-      `SELECT MAX(block_num) AS tip,
-              MIN(block_num) AS earliest
-         FROM ${table("logs")}
-         WHERE block_num >= 0`,
-    );
-    const row = (rows[0] ?? {}) as { tip?: number; earliest?: number };
+    // Tip — no WHERE clause so DataFusion uses parquet footer stats
+    // for MAX. Fast even on a non-compacted store.
+    const tipRows = await ampQuery(`SELECT MAX(block_num) AS tip FROM ${table("logs")}`);
+    const tip = Number((tipRows[0] as { tip?: number })?.tip ?? 0) || null;
+
+    // Earliest — only fetch if cache is cold. The first request after a
+    // deploy takes ~2-5s; subsequent requests within 5 min are instant.
+    let earliest: number | null = earliestCache?.value ?? null;
+    const cacheCold = !earliestCache || Date.now() - earliestCache.at > EARLIEST_TTL_MS;
+    if (cacheCold) {
+      try {
+        const eRows = await ampQuery(
+          `SELECT MIN(block_num) AS earliest FROM ${table("logs")}`,
+        );
+        const e = Number((eRows[0] as { earliest?: number })?.earliest ?? 0);
+        if (e > 0) {
+          earliest = e;
+          earliestCache = { value: e, at: Date.now() };
+        }
+      } catch {
+        // If earliest fails, ship tip anyway — clients usually only need tip
+      }
+    }
+
     return NextResponse.json({
-      tip_block: row.tip ?? null,
-      earliest_block: row.earliest ?? null,
-      span_blocks:
-        row.tip != null && row.earliest != null ? row.tip - row.earliest + 1 : null,
+      tip_block: tip,
+      earliest_block: earliest,
+      span_blocks: tip != null && earliest != null ? tip - earliest + 1 : null,
       dataset: process.env.AMP_DATASET,
     });
   } catch (e) {
