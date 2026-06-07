@@ -108,7 +108,10 @@ export function StatsStrip() {
 
   useEffect(() => {
     refresh();
-    const id = setInterval(refresh, 30_000);
+    // Polls every 60s — Vercel edge caches /v1/status for 30s, so the
+    // dashboard hits ampd at most once per 30s window even with many
+    // concurrent visitors.
+    const id = setInterval(refresh, 60_000);
     const tickId = setInterval(() => setTick((t) => t + 1), 1000);
     return () => {
       clearInterval(id);
@@ -224,7 +227,8 @@ export function LiveFeed() {
 
   useEffect(() => {
     refresh();
-    const id = setInterval(refresh, 5_000);
+    // Polls every 10s — edge cache holds 5s, real ampd hit at most every 5s.
+    const id = setInterval(refresh, 10_000);
     return () => clearInterval(id);
   }, [refresh]);
 
@@ -233,7 +237,7 @@ export function LiveFeed() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
         <h2 style={sectionTitle}>● live activity</h2>
         <span style={{ fontSize: 11, color: "#475569", letterSpacing: "0.05em" }}>
-          {error ? "● disconnected" : "every 5s"}
+          {error ? "● disconnected" : "every 10s"}
         </span>
       </div>
       <div style={{ overflowX: "auto" }}>
@@ -344,7 +348,8 @@ export function TopRecipients() {
 
   useEffect(() => {
     refresh();
-    const id = setInterval(refresh, 20_000);
+    // Polls every 60s — edge cache holds 30s.
+    const id = setInterval(refresh, 60_000);
     return () => clearInterval(id);
   }, [refresh]);
 

@@ -50,13 +50,20 @@ export async function GET(req: Request) {
     `;
     const started = Date.now();
     const rows = await ampQuery(sql);
-    return NextResponse.json({
-      from_block: fromBlock,
-      to_block: toBlock,
-      count: rows.length,
-      rows,
-      elapsed_ms: Date.now() - started,
-    });
+    return NextResponse.json(
+      {
+        from_block: fromBlock,
+        to_block: toBlock,
+        count: rows.length,
+        rows,
+        elapsed_ms: Date.now() - started,
+      },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=30, stale-while-revalidate=300",
+        },
+      },
+    );
   } catch (e) {
     return handle(e);
   }

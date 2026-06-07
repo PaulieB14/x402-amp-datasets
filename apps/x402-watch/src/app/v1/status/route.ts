@@ -37,12 +37,21 @@ export async function GET() {
       }
     }
 
-    return NextResponse.json({
-      tip_block: tip,
-      earliest_block: earliest,
-      span_blocks: tip != null && earliest != null ? tip - earliest + 1 : null,
-      dataset: process.env.AMP_DATASET,
-    });
+    return NextResponse.json(
+      {
+        tip_block: tip,
+        earliest_block: earliest,
+        span_blocks: tip != null && earliest != null ? tip - earliest + 1 : null,
+        dataset: process.env.AMP_DATASET,
+      },
+      {
+        headers: {
+          // Cache at Vercel edge for 30s, serve stale for up to 5 min while
+          // refreshing in background. Survives ampd compaction stalls.
+          "Cache-Control": "public, s-maxage=30, stale-while-revalidate=300",
+        },
+      },
+    );
   } catch (e) {
     return handle(e);
   }
